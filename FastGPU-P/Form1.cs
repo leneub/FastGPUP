@@ -213,7 +213,8 @@ While ($VM.State -ne ""Off"") {
 }
 
 ""Mounting Drive...""
-$DiskNumber = (Mount-VHD -NoDriveLetter -Path $VHD.Path -PassThru | Get-Disk).Number
+$VHDPath = if($VHD.Path -is [string]) {$VHD.Path} else {$VHD.Path[0]}
+$DiskNumber = (Mount-VHD -NoDriveLetter -Path $VHDPath -PassThru | Get-Disk).Number
 $PartitionNumber = (Get-Partition -DiskNumber $DiskNumber | Where-Object {$_.Type -eq ""Basic""}).PartitionNumber
 $UsedLetters = Get-CimInstance -ClassName Win32_LogicalDisk | Select-Object -ExpandProperty DeviceID | ForEach-Object { $_.ToString()[0] }
 $DriveLetter = [char[]](67..90) | Where-Object { $_ -notin $UsedLetters } | Select-Object -First 1
@@ -223,7 +224,7 @@ Set-Partition -DiskNumber $DiskNumber -PartitionNumber $PartitionNumber -NewDriv
 Add-VMGPUPartitionAdapterFiles -hostname $Hostname -DriveLetter $DriveLetter -GPUName $GPUName
 
 ""Dismounting Drive...""
-Dismount-VHD -Path $VHD.Path
+Dismount-VHD -Path $VHDPath
 
 If ($state_was_running){
     ""Previous State was running so starting VM...""
